@@ -28,6 +28,8 @@ class WaterParticleEffect {
 
     this.collisionPosition = new THREE.Vector3();
 
+    this.fallingSpeed = null;
+    
     this.rippleMesh = null;
     this.initRipple();
   }
@@ -57,6 +59,7 @@ class WaterParticleEffect {
     const _handleRipple = () => {
       if (this.rippleMesh) {
         if (this.fallingSpeed > 6) {
+          this.rippleMesh.visible = true;
           this.rippleGroup.position.copy(this.collisionPosition);
           this.rippleMesh.material.uniforms.vBroken.value = 0.1;
           this.rippleMesh.scale.set(0.2, 1, 0.2);
@@ -71,55 +74,64 @@ class WaterParticleEffect {
           this.rippleMesh.scale.z += 0.007 * (1 + falling * 0.1);
           this.rippleMesh.material.uniforms.uTime.value += 0.015;
         }
+        else {
+          this.rippleMesh.visible = false;
+        }
       }
     };
     _handleRipple();
 
+
+
+
+
+
     this.lastContactWater = this.contactWater;
     this.scene.updateMatrixWorld();
-
   }
-  initRipple(){
+
+  //########################################################## initialize particle mesh #####################################################
+  initRipple() {
     this.rippleGroup = new THREE.Group();
     (async () => {
         const u = `${baseUrl}../assets/textures/water-particle/ripple.glb`;
         const splashMeshApp = await new Promise((accept, reject) => {
-            const {gltfLoader} = useLoaders();
-            gltfLoader.load(u, accept, function onprogress() {}, reject);
+          const {gltfLoader} = useLoaders();
+          gltfLoader.load(u, accept, function onprogress() {}, reject);
             
         });
         this.rippleGroup.add(splashMeshApp.scene)
         this.rippleMesh = splashMeshApp.scene.children[0];
-        this.rippleMesh.scale.set(0, 0, 0);
+        this.rippleMesh.visible = false;
         this.scene.add(this.rippleGroup);
         
         this.rippleMesh.material = new THREE.ShaderMaterial({
-            uniforms: {
-                uTime: {
-                    value: 0,
-                },
-                vBroken: {
-                    value: 0,
-                },
-                rippleTexture:{
-                    value: rippleTexture2
-                },
-                voronoiNoiseTexture:{
-                    value:voronoiNoiseTexture
-                },
-                noiseMap:{
-                    value: noiseMap
-                },
+          uniforms: {
+            uTime: {
+              value: 0,
             },
-            vertexShader: rippleVertex,
-            fragmentShader: rippleFragment,
-            side: THREE.DoubleSide,
-            transparent: true,
-            depthWrite: false,
-            blending: THREE.AdditiveBlending,
+            vBroken: {
+              value: 0,
+            },
+            rippleTexture:{
+              value: rippleTexture2
+            },
+            voronoiNoiseTexture:{
+              value:voronoiNoiseTexture
+            },
+            noiseMap:{
+              value: noiseMap
+            },
+          },
+          vertexShader: rippleVertex,
+          fragmentShader: rippleFragment,
+          side: THREE.DoubleSide,
+          transparent: true,
+          depthWrite: false,
+          blending: THREE.AdditiveBlending,
         });
     })();
-}
+  }
 
 }
 
