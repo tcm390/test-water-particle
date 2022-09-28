@@ -2,10 +2,9 @@ import metaversefile from 'metaversefile';
 import * as THREE from 'three';
 import loadTexture from './loadTexture.js';
 import {
-  rippleVertex,
-  rippleFragment,
-  lowerSplashVertex, 
-  lowerSplashFragment
+  rippleVertex, rippleFragment,
+  divingLowerSplashVertex, divingLowerSplashFragment,
+  divingHigherSplashVertex, divingHigherSplashFragment,
 } from './water-shader.js';
 
 const {useLoaders, useSound, useInternals} = metaversefile;
@@ -17,6 +16,7 @@ const voronoiNoiseTexture = loadTexture(`../assets/textures/water-particle/textu
 const noiseMap = loadTexture(`../assets/textures/water-particle/textures/noise.jpg`);
 const rippleTexture2 = loadTexture(`../assets/textures/water-particle/textures/ripple2.png`);
 const splashTexture2 = loadTexture(`../assets/textures/water-particle/textures/splash2.png`, false);
+const splashTexture3 = loadTexture(`../assets/textures/water-particle/textures/splash3.png`, false);
 
 class WaterParticleEffect {
   constructor() {
@@ -36,8 +36,11 @@ class WaterParticleEffect {
     this.rippleMesh = null;
     this.initRipple();
 
-    this.lowerSplash = null;
-    this.initLowerSplash();
+    this.divingLowerSplash = null;
+    this.initDivingLowerSplash();
+
+    this.divingHigherSplash = null;
+    this.initDivingHigherSplash();
   }
   
   update() {
@@ -89,24 +92,25 @@ class WaterParticleEffect {
     };
     _handleRipple();
 
-    const _handleLowerSplash = () =>{
-      if (this.lowerSplash) { 
-        const brokenAttribute = this.lowerSplash.geometry.getAttribute('broken');
-        const positionsAttribute = this.lowerSplash.geometry.getAttribute('positions');
-        const scalesAttribute = this.lowerSplash.geometry.getAttribute('scales');
-        const textureRotationAttribute = this.lowerSplash.geometry.getAttribute('textureRotation');
-        const particleCount = this.lowerSplash.info.particleCount;
+    const _handledivingLowerSplash = () =>{
+      if (this.divingLowerSplash) { 
+        const brokenAttribute = this.divingLowerSplash.geometry.getAttribute('broken');
+        const positionsAttribute = this.divingLowerSplash.geometry.getAttribute('positions');
+        const scalesAttribute = this.divingLowerSplash.geometry.getAttribute('scales');
+        const textureRotationAttribute = this.divingLowerSplash.geometry.getAttribute('textureRotation');
+        const particleCount = this.divingLowerSplash.info.particleCount;
         for (let i = 0; i < particleCount; i++) {
           if (this.fallingSpeed > 6) {
-            this.lowerSplash.info.velocity[i].x = Math.sin(i) * .055 + (Math.random() - 0.5) * 0.001;
-            this.lowerSplash.info.velocity[i].y = 0.12 + 0.01 * Math.random();
-            this.lowerSplash.info.velocity[i].z = Math.cos(i) * .055 + (Math.random() - 0.5) * 0.001;
-            positionsAttribute.setXYZ(  i, 
-                                        this.collisionPosition.x + this.lowerSplash.info.velocity[i].x,
-                                        this.collisionPosition.y + 0.1 * Math.random(),
-                                        this.collisionPosition.z + this.lowerSplash.info.velocity[i].z
+            this.divingLowerSplash.info.velocity[i].x = Math.sin(i) * .055 + (Math.random() - 0.5) * 0.001;
+            this.divingLowerSplash.info.velocity[i].y = 0.12 + 0.01 * Math.random();
+            this.divingLowerSplash.info.velocity[i].z = Math.cos(i) * .055 + (Math.random() - 0.5) * 0.001;
+            positionsAttribute.setXYZ(  
+              i, 
+              this.collisionPosition.x + this.divingLowerSplash.info.velocity[i].x,
+              this.collisionPosition.y + 0.1 * Math.random(),
+              this.collisionPosition.z + this.divingLowerSplash.info.velocity[i].z
             );
-            this.lowerSplash.info.velocity[i].divideScalar(5);
+            this.divingLowerSplash.info.velocity[i].divideScalar(5);
             scalesAttribute.setX(i, 0.6);
             textureRotationAttribute.setX(i, Math.random() * 2);
             brokenAttribute.setX(i, 0.2); 
@@ -122,12 +126,13 @@ class WaterParticleEffect {
           if (scalesAttribute.getX(i) >= 2.1) {
             if (brokenAttribute.getX(i) < 1) {
               brokenAttribute.setX(i, brokenAttribute.getX(i) + 0.015);
-              positionsAttribute.setXYZ(  i, 
-                                          positionsAttribute.getX(i) + this.lowerSplash.info.velocity[i].x,
-                                          positionsAttribute.getY(i) + this.lowerSplash.info.velocity[i].y,
-                                          positionsAttribute.getZ(i) + this.lowerSplash.info.velocity[i].z
+              positionsAttribute.setXYZ(  
+                i, 
+                positionsAttribute.getX(i) + this.divingLowerSplash.info.velocity[i].x,
+                positionsAttribute.getY(i) + this.divingLowerSplash.info.velocity[i].y,
+                positionsAttribute.getZ(i) + this.divingLowerSplash.info.velocity[i].z
               );
-              this.lowerSplash.info.velocity[i].add(this.lowerSplash.info.acc);
+              this.divingLowerSplash.info.velocity[i].add(this.divingLowerSplash.info.acc);
               if (this.higherSplashSw === 0) {
                 this.higherSplashSw = 1;
               }
@@ -138,12 +143,51 @@ class WaterParticleEffect {
         positionsAttribute.needsUpdate = true;
         scalesAttribute.needsUpdate = true;
         textureRotationAttribute.needsUpdate = true;
-        this.lowerSplash.material.uniforms.uTime.value = timestamp / 1000;
-        this.lowerSplash.material.uniforms.cameraBillboardQuaternion.value.copy(this.camera.quaternion);
-        this.lowerSplash.material.uniforms.waterSurfacePos.value = this.waterSurfaceHeight;
+        this.divingLowerSplash.material.uniforms.cameraBillboardQuaternion.value.copy(this.camera.quaternion);
+        this.divingLowerSplash.material.uniforms.waterSurfacePos.value = this.waterSurfaceHeight;
       }
     }
-    _handleLowerSplash();
+    _handledivingLowerSplash();
+
+    const _handledivingHigherSplash = () =>{
+      if (this.divingHigherSplash) { 
+        const brokenAttribute = this.divingHigherSplash.geometry.getAttribute('broken');
+        const positionsAttribute = this.divingHigherSplash.geometry.getAttribute('positions');
+        const scalesAttribute = this.divingHigherSplash.geometry.getAttribute('scales');
+        const rotationAttribute = this.divingHigherSplash.geometry.getAttribute('rotation');
+        const particleCount = this.divingHigherSplash.info.particleCount;
+        if (this.fallingSpeed > 6) {
+          for (let i = 0; i < particleCount; i++) {
+            this.divingHigherSplash.info.velocity[i].y = (0.12 + 0.01 * Math.random()) * 0.8;
+            brokenAttribute.setX(i, 0.2 + Math.random() * 0.25);
+            scalesAttribute.setX(i, 0.5 + Math.random() * 0.5);
+            const theta = 2. * Math.PI * i / particleCount;
+            positionsAttribute.setXYZ(
+              i,
+              this.collisionPosition.x + Math.sin(theta) * 0.1,
+              this.collisionPosition.y - 0.5,
+              this.collisionPosition.z + Math.cos(theta) * 0.1
+            ) 
+            const n = Math.cos(theta) > 0 ? 1 : -1;
+            rotationAttribute.setXYZ(i, -Math.sin(theta) * n * (Math.PI / 2)); 
+          }
+        }
+        for (let i = 0; i < particleCount; i++) {
+          if (brokenAttribute.getX(i) < 1) {
+            brokenAttribute.setX(i, brokenAttribute.getX(i) * 1.02);
+          }
+          scalesAttribute.setX(i, scalesAttribute.getX(i) + 0.02);
+          positionsAttribute.setY(i, positionsAttribute.getY(i) + this.divingHigherSplash.info.velocity[i].y);
+          this.divingHigherSplash.info.velocity[i].add(this.divingHigherSplash.info.acc); 
+        }
+        brokenAttribute.needsUpdate = true;
+        positionsAttribute.needsUpdate = true;
+        scalesAttribute.needsUpdate = true;
+        rotationAttribute.needsUpdate = true;
+        this.divingHigherSplash.material.uniforms.waterSurfacePos.value = this.waterSurfaceHeight;
+      }
+    }
+    _handledivingHigherSplash();
 
 
 
@@ -218,50 +262,86 @@ class WaterParticleEffect {
         });
     })();
   }
-  initLowerSplash(){
+  initDivingLowerSplash(){
     const particleCount = 15;
     const attributeSpecs = [];
     attributeSpecs.push({name: 'broken', itemSize: 1});
     attributeSpecs.push({name: 'scales', itemSize: 1});
     attributeSpecs.push({name: 'textureRotation', itemSize: 1});
-    const geometry2 = new THREE.PlaneGeometry(0.2, 0.2);
+    const geometry2 = new THREE.PlaneGeometry(0.2, 0.25);
     const geometry = this._getGeometry(geometry2, attributeSpecs, particleCount);
     const material= new THREE.ShaderMaterial({
       uniforms: {
-          uTime: {
-            value: 0,
-          },
-          cameraBillboardQuaternion: {
-            value: new THREE.Quaternion(),
-          },
-          splashTexture: {
-            value: splashTexture2,
-          },
-          waterSurfacePos: {
-            value: 0,
-          },
-          noiseMap:{
-            value: noiseMap
-          },
+        cameraBillboardQuaternion: {
+          value: new THREE.Quaternion(),
+        },
+        splashTexture: {
+          value: splashTexture2,
+        },
+        waterSurfacePos: {
+          value: 0,
+        },
+        noiseMap:{
+          value: noiseMap
+        },
       },
-      vertexShader: lowerSplashVertex,
-      fragmentShader: lowerSplashFragment,
+      vertexShader: divingLowerSplashVertex,
+      fragmentShader: divingLowerSplashFragment,
       side: THREE.DoubleSide,
       depthWrite: false,
       blending: THREE.AdditiveBlending,
       transparent: true,
     });
-    this.lowerSplash = new THREE.InstancedMesh(geometry, material, particleCount);
-    this.lowerSplash.info = {
-        particleCount: particleCount,
-        velocity: [particleCount],
-        acc: new THREE.Vector3(0, -0.002, 0)
+    this.divingLowerSplash = new THREE.InstancedMesh(geometry, material, particleCount);
+    this.divingLowerSplash.info = {
+      particleCount: particleCount,
+      velocity: [particleCount],
+      acc: new THREE.Vector3(0, -0.002, 0)
     }
-    for(let i = 0; i < particleCount; i++){
-        this.lowerSplash.info.velocity[i] = new THREE.Vector3();
+    for (let i = 0; i < particleCount; i++) {
+      this.divingLowerSplash.info.velocity[i] = new THREE.Vector3();
     }
-    this.scene.add(this.lowerSplash);
+    this.scene.add(this.divingLowerSplash);
   }
+  initDivingHigherSplash(){
+    const particleCount = 15;
+    const attributeSpecs = [];
+    attributeSpecs.push({name: 'broken', itemSize: 1});
+    attributeSpecs.push({name: 'scales', itemSize: 1});
+    attributeSpecs.push({name: 'rotation', itemSize: 1});
+    const geometry2 = new THREE.PlaneGeometry(0.25, 1);
+    const geometry = this._getGeometry(geometry2, attributeSpecs, particleCount);
+    const material= new THREE.ShaderMaterial({
+      uniforms: {
+        splashTexture: {
+          value: splashTexture3,
+        },
+        waterSurfacePos: {
+          value: 0,
+        },
+        noiseMap:{
+          value: noiseMap
+        },
+      },
+      vertexShader: divingHigherSplashVertex,
+      fragmentShader: divingHigherSplashFragment,
+      side: THREE.DoubleSide,
+      depthWrite: false,
+      blending: THREE.AdditiveBlending,
+      transparent: true,
+    });
+    this.divingHigherSplash = new THREE.InstancedMesh(geometry, material, particleCount);
+    this.divingHigherSplash.info = {
+      particleCount: particleCount,
+      velocity: [particleCount],
+      acc: new THREE.Vector3(0, -0.004, 0)
+    }
+    for (let i = 0; i < particleCount; i++) {
+      this.divingHigherSplash.info.velocity[i] = new THREE.Vector3();
+    }
+    this.scene.add(this.divingHigherSplash);
+  }
+  
 
 }
 
