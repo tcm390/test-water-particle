@@ -159,26 +159,31 @@ class WaterParticleEffect {
         if (this.fallingSpeed > 6) {
           for (let i = 0; i < particleCount; i++) {
             this.divingHigherSplash.info.velocity[i].y = (0.12 + 0.01 * Math.random()) * 0.8;
-            brokenAttribute.setX(i, 0.2 + Math.random() * 0.25);
+            brokenAttribute.setX(i, 0.22 + Math.random() * 0.1);
             scalesAttribute.setX(i, 0.5 + Math.random() * 0.5);
             const theta = 2. * Math.PI * i / particleCount;
             positionsAttribute.setXYZ(
               i,
-              this.collisionPosition.x + Math.sin(theta) * 0.1,
-              this.collisionPosition.y - 0.5,
-              this.collisionPosition.z + Math.cos(theta) * 0.1
+              this.collisionPosition.x + Math.sin(theta) * 0.07,
+              this.collisionPosition.y - 1.5,
+              this.collisionPosition.z + Math.cos(theta) * 0.07
             ) 
             const n = Math.cos(theta) > 0 ? 1 : -1;
             rotationAttribute.setXYZ(i, -Math.sin(theta) * n * (Math.PI / 2)); 
           }
         }
         for (let i = 0; i < particleCount; i++) {
-          if (brokenAttribute.getX(i) < 1) {
-            brokenAttribute.setX(i, brokenAttribute.getX(i) * 1.02);
+          if (positionsAttribute.getY(i) >= this.collisionPosition.y - 0.7 && scalesAttribute.getX(i) > 0) {
+            if (brokenAttribute.getX(i) < 1) {
+              brokenAttribute.setX(i, brokenAttribute.getX(i) * 1.028);
+            }
+            scalesAttribute.setX(i, scalesAttribute.getX(i) + 0.02);
+            positionsAttribute.setY(i, positionsAttribute.getY(i) + this.divingHigherSplash.info.velocity[i].y);
+            this.divingHigherSplash.info.velocity[i].add(this.divingHigherSplash.info.acc);
           }
-          scalesAttribute.setX(i, scalesAttribute.getX(i) + 0.02);
-          positionsAttribute.setY(i, positionsAttribute.getY(i) + this.divingHigherSplash.info.velocity[i].y);
-          this.divingHigherSplash.info.velocity[i].add(this.divingHigherSplash.info.acc); 
+          else {
+            positionsAttribute.setY(i, positionsAttribute.getY(i) + 0.08);
+          } 
         }
         brokenAttribute.needsUpdate = true;
         positionsAttribute.needsUpdate = true;
@@ -334,7 +339,7 @@ class WaterParticleEffect {
     this.divingHigherSplash.info = {
       particleCount: particleCount,
       velocity: [particleCount],
-      acc: new THREE.Vector3(0, -0.004, 0)
+      acc: new THREE.Vector3(0, -0.0035, 0)
     }
     for (let i = 0; i < particleCount; i++) {
       this.divingHigherSplash.info.velocity[i] = new THREE.Vector3();
